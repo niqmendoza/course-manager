@@ -1,0 +1,251 @@
+{% extends 'courses/base.html' %}
+{% load static %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="row mb-4">
+        <div class="col-md-8">
+            <h2>Documentaciones</h2>
+        </div>
+        <div class="col-md-4 text-end">
+            <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#addDocModal">
+                <i class="fas fa-plus"></i> Agregar Documentación
+            </button>
+        </div>
+    </div>
+
+    <!-- Modal para agregar documentación -->
+    <div class="modal fade" id="addDocModal" tabindex="-1">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Agregar Nueva Documentación</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <form method="post">
+                    <div class="modal-body">
+                        {% csrf_token %}
+                        {{ form.as_p }}
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                        <button type="submit" class="btn btn-primary">Guardar</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- Documentaciones por categoría -->
+    {% for category, docs in docs_by_category.items %}
+    <div class="mb-5">
+        <h3 class="mb-4">{{ category }}</h3>
+        <div class="row">
+            {% for doc in docs %}
+            <div class="col-md-4 mb-4">
+                <div class="card h-100 doc-card {% if doc.favorite %}border-warning{% endif %}">
+                    <div class="card-header bg-transparent d-flex justify-content-between align-items-center">
+                        <div class="doc-icon" data-bs-toggle="tooltip" title="Clic para cambiar ícono" style="cursor: pointer;" onclick="showIconModal({{ doc.id }}, '{{ doc.icon_url|default:'' }}')">
+                            {% if doc.icon_url %}
+                            <img src="{{ doc.icon_url }}" alt="{{ doc.title }} icon" class="doc-icon-img">
+                            {% else %}
+                            <i class="fas fa-book fa-2x text-primary"></i>
+                            {% endif %}
+                        </div>
+                        <div class="btn-group">
+                            <button class="btn btn-link toggle-favorite" data-doc-id="{{ doc.id }}">
+                                <i class="fas fa-star {% if doc.favorite %}text-warning{% else %}text-muted{% endif %}"></i>
+                            </button>
+                            <form action="{% url 'delete_documentation' doc.id %}" method="post" class="d-inline">
+                                {% csrf_token %}
+                                <button type="submit" class="btn btn-link text-danger" onclick="return confirm('¿Estás seguro de eliminar esta documentación?')">
+                                    <i class="fas fa-trash"></i>
+                                </button>
+                            </form>
+                        </div>
+                    </div>
+                    <div class="card-body">
+                        <h5 class="card-title">{{ doc.title }}</h5>
+                        {% if doc.description %}
+                        <p class="card-text">{{ doc.description }}</p>
+                        {% endif %}
+                    </div>
+                    <div class="card-footer bg-transparent">
+                        <a href="{{ doc.url }}" target="_blank" class="btn btn-primary w-100">
+                            <i class="fas fa-external-link-alt"></i> Ver Documentación
+                        </a>
+                    </div>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+    {% empty %}
+    <div class="alert alert-info">
+        No hay documentaciones agregadas aún. ¡Comienza agregando una!
+    </div>
+    {% endfor %}
+</div>
+
+<!-- Modal para editar ícono -->
+<div class="modal fade" id="editIconModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Cambiar Ícono</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <form id="updateIconForm">
+                    <div class="mb-3">
+                        <label for="iconUrl" class="form-label">URL del Ícono</label>
+                        <input type="url" class="form-control" id="iconUrl" name="icon_url" placeholder="https://ejemplo.com/icono.png">
+                        <div class="form-text">
+                            Ingresa la URL de una imagen para usar como ícono. Recomendamos usar íconos cuadrados de al menos 40x40 píxeles.
+                        </div>
+                    </div>
+                    <div class="text-center mb-3" id="iconPreview">
+                        <!-- La vista previa se mostrará aquí -->
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                <button type="button" class="btn btn-primary" onclick="updateIcon()">Guardar</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+.doc-card {
+    transition: transform 0.2s, box-shadow 0.2s;
+    border-radius: 15px;
+}
+
+.doc-card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+}
+
+.doc-icon {
+    width: 40px;
+    height: 40px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: transform 0.2s;
+}
+
+.doc-icon:hover {
+    transform: scale(1.1);
+}
+
+.doc-icon-img {
+    max-width: 100%;
+    max-height: 100%;
+    object-fit: contain;
+}
+
+.card-header {
+    border-top-left-radius: 15px !important;
+    border-top-right-radius: 15px !important;
+}
+
+.btn-link {
+    text-decoration: none;
+}
+
+.border-warning {
+    border-width: 2px !important;
+}
+
+#iconPreview img {
+    max-width: 100px;
+    max-height: 100px;
+    object-fit: contain;
+}
+</style>
+
+{% block extra_js %}
+<script>
+let currentDocId = null;
+
+function showIconModal(docId, currentUrl) {
+    currentDocId = docId;
+    const modal = new bootstrap.Modal(document.getElementById('editIconModal'));
+    const iconUrlInput = document.getElementById('iconUrl');
+    iconUrlInput.value = currentUrl;
+    updateIconPreview(currentUrl);
+    modal.show();
+}
+
+function updateIconPreview(url) {
+    const preview = document.getElementById('iconPreview');
+    if (url) {
+        preview.innerHTML = `<img src="${url}" alt="Vista previa" onerror="this.src='/static/icons/course_icon.png'">`;
+    } else {
+        preview.innerHTML = '<i class="fas fa-book fa-3x text-primary"></i>';
+    }
+}
+
+function updateIcon() {
+    const iconUrl = document.getElementById('iconUrl').value;
+    
+    $.post(`/documentation/update-icon/${currentDocId}/`, {
+        csrfmiddlewaretoken: $('[name=csrfmiddlewaretoken]').val(),
+        icon_url: iconUrl
+    }, function(response) {
+        if (response.status === 'success') {
+            // Actualizar el ícono en la tarjeta
+            const docIcon = $(`.doc-icon[onclick*="${currentDocId}"]`);
+            if (response.icon_url) {
+                docIcon.html(`<img src="${response.icon_url}" alt="icon" class="doc-icon-img">`);
+            } else {
+                docIcon.html('<i class="fas fa-book fa-2x text-primary"></i>');
+            }
+            
+            // Cerrar el modal
+            bootstrap.Modal.getInstance(document.getElementById('editIconModal')).hide();
+        }
+    });
+}
+
+// Vista previa en tiempo real del ícono
+document.getElementById('iconUrl').addEventListener('input', function(e) {
+    updateIconPreview(e.target.value);
+});
+
+// Inicializar tooltips de Bootstrap
+var tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'));
+var tooltipList = tooltipTriggerList.map(function (tooltipTriggerEl) {
+    return new bootstrap.Tooltip(tooltipTriggerEl);
+});
+
+// Código existente para favoritos
+$(document).ready(function() {
+    // Manejar el toggle de favoritos
+    $('.toggle-favorite').click(function() {
+        const button = $(this);
+        const docId = button.data('doc-id');
+        const icon = button.find('i');
+        const card = button.closest('.doc-card');
+        
+        $.post(`/documentation/toggle-favorite/${docId}/`, {
+            csrfmiddlewaretoken: $('[name=csrfmiddlewaretoken]').val()
+        }, function(response) {
+            if (response.status === 'success') {
+                if (response.favorite) {
+                    icon.addClass('text-warning').removeClass('text-muted');
+                    card.addClass('border-warning');
+                } else {
+                    icon.addClass('text-muted').removeClass('text-warning');
+                    card.removeClass('border-warning');
+                }
+            }
+        });
+    });
+});
+</script>
+{% endblock %}
+{% endblock %}

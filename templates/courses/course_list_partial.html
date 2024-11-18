@@ -1,0 +1,54 @@
+{% if courses %}
+    <div class="row">
+        {% for course in courses %}
+            <div class="col-md-4 mb-4">
+                <div class="card course-card">
+                    <div class="thumbnail-container">
+                        {% if course.thumbnail %}
+                            <img src="{{ course.thumbnail.url }}" class="card-img-top" alt="{{ course.title }}">
+                        {% else %}
+                            <img src="/static/icons/course_icon.png" class="card-img-top" alt="Default thumbnail">
+                        {% endif %}
+                    </div>
+                    <div class="card-body">
+                        <h5 class="card-title">{{ course.title }}</h5>
+                        <p class="card-text">
+                            <span class="badge bg-primary">{{ course.get_platform_display }}</span>
+                            <span class="badge bg-secondary">{{ course.get_language_display }}</span>
+                            <span class="badge bg-info">{{ course.route.name }}</span>
+                            {% if course.completed %}
+                                <span class="badge bg-success completion-badge" data-course-id="{{ course.id }}" title="Completado el {{ course.completed_at|date:'d/m/Y H:i' }}">
+                                    <i class="fas fa-check"></i> Completado
+                                </span>
+                            {% else %}
+                                <span class="badge bg-warning completion-badge" data-course-id="{{ course.id }}">
+                                    <i class="fas fa-clock"></i> Pendiente
+                                </span>
+                            {% endif %}
+                        </p>
+                        <div class="d-flex justify-content-between align-items-center">
+                            <a href="{{ course.url }}" target="_blank" class="btn btn-primary">
+                                <i class="fas fa-external-link-alt"></i> Ver Curso
+                            </a>
+                            <div>
+                                <button class="btn btn-success btn-sm toggle-completion" data-course-id="{{ course.id }}">
+                                    <i class="fas {% if course.completed %}fa-times{% else %}fa-check{% endif %}"></i>
+                                </button>
+                                <form action="{% url 'delete_course' course.id %}" method="post" style="display: inline;">
+                                    {% csrf_token %}
+                                    <button type="submit" class="btn btn-danger btn-sm" onclick="return confirm('¿Estás seguro de eliminar este curso?')">
+                                        <i class="fas fa-trash"></i>
+                                    </button>
+                                </form>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        {% endfor %}
+    </div>
+{% else %}
+    <div class="alert alert-info">
+        No se encontraron cursos con los filtros seleccionados.
+    </div>
+{% endif %}

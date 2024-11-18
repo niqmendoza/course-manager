@@ -1,0 +1,103 @@
+{% extends 'courses/base.html' %}
+
+{% block content %}
+<div class="row mb-4">
+    <div class="col-md-3">
+        <select id="route-filter" class="form-select">
+            <option value="">Todas las rutas</option>
+            {% for route in routes %}
+                <option value="{{ route.id }}">{{ route.name }}</option>
+            {% endfor %}
+        </select>
+    </div>
+    <div class="col-md-3">
+        <select id="language-filter" class="form-select">
+            <option value="">Todos los lenguajes</option>
+            {% for code, name in courses.0.LANGUAGE_CHOICES %}
+                <option value="{{ code }}">{{ name }}</option>
+            {% endfor %}
+        </select>
+    </div>
+    <div class="col-md-3">
+        <select id="platform-filter" class="form-select">
+            <option value="">Todas las plataformas</option>
+            {% for code, name in courses.0.PLATFORM_CHOICES %}
+                <option value="{{ code }}">{{ name }}</option>
+            {% endfor %}
+        </select>
+    </div>
+    <div class="col-md-3">
+        <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#addRouteModal">
+            <i class="fas fa-plus"></i> Nueva Ruta
+        </button>
+    </div>
+</div>
+
+<div id="courses-container">
+    {% include 'courses/course_list_partial.html' %}
+</div>
+
+<!-- Modal para agregar ruta -->
+<div class="modal fade" id="addRouteModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Agregar Nueva Ruta</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <form id="addRouteForm">
+                    {% csrf_token %}
+                    <div class="mb-3">
+                        <label for="route-name" class="form-label">Nombre de la Ruta</label>
+                        <input type="text" class="form-control" id="route-name" name="name" required>
+                    </div>
+                    <button type="submit" class="btn btn-primary">Guardar</button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    function filterCourses() {
+        const route = $('#route-filter').val();
+        const language = $('#language-filter').val();
+        const platform = $('#platform-filter').val();
+        
+        $.get('{% url "filter_courses" %}', {
+            route: route,
+            language: language,
+            platform: platform
+        }, function(data) {
+            $('#courses-container').html(data);
+        });
+    }
+
+    $('#route-filter, #language-filter, #platform-filter').change(filterCourses);
+
+    $('#addRouteForm').on('submit', function(e) {
+        e.preventDefault();
+        
+        $.post('{% url "add_route" %}', {
+            name: $('#route-name').val(),
+            csrfmiddlewaretoken: $('[name=csrfmiddlewaretoken]').val()
+        }, function(response) {
+            if (response.status === 'success') {
+                $('#route-filter').append(
+                    $('<option>', {
+                        value: response.route_id,
+                        text: response.route_name
+                    })
+                );
+                $('#addRouteModal').modal('hide');
+                $('#addRouteForm')[0].reset();
+            } else {
+                alert('Error al crear la ruta');
+            }
+        });
+    });
+</script>
+{% endblock %}
