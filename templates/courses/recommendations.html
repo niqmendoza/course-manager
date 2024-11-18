@@ -2,179 +2,136 @@
 {% load static %}
 
 {% block content %}
-<div class="container mt-4">
-    <h2 class="mb-4">Recomendaciones de Cursos</h2>
-
-    <!-- Estadísticas Generales -->
-    <div class="row mb-4">
-        <div class="col-md-3">
-            <div class="card bg-primary text-white">
+<div class="container py-4">
+    <h1 class="mb-4">Recomendaciones de Cursos</h1>
+    
+    {% if courses_with_recommendations %}
+        {% for course_data in courses_with_recommendations %}
+            <div class="card mb-4">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <h2 class="h5 mb-0">Videos relacionados con: {{ course_data.course.title }}</h2>
+                    <div class="navigation-buttons">
+                        <button class="btn btn-sm btn-outline-primary scroll-left" data-target="{{ forloop.counter }}">
+                            <i class="fas fa-chevron-left"></i>
+                        </button>
+                        <button class="btn btn-sm btn-outline-primary scroll-right" data-target="{{ forloop.counter }}">
+                            <i class="fas fa-chevron-right"></i>
+                        </button>
+                    </div>
+                </div>
                 <div class="card-body">
-                    <h5 class="card-title">Total de Cursos</h5>
-                    <p class="card-text display-4">{{ stats.total_courses }}</p>
-                </div>
-            </div>
-        </div>
-        <div class="col-md-3">
-            <div class="card bg-success text-white">
-                <div class="card-body">
-                    <h5 class="card-title">Cursos Completados</h5>
-                    <p class="card-text display-4">{{ stats.completed_courses }}</p>
-                </div>
-            </div>
-        </div>
-        <div class="col-md-3">
-            <div class="card bg-info text-white">
-                <div class="card-body">
-                    <h5 class="card-title">Total de Rutas</h5>
-                    <p class="card-text display-4">{{ stats.total_routes }}</p>
-                </div>
-            </div>
-        </div>
-        <div class="col-md-3">
-            <div class="card bg-warning text-white">
-                <div class="card-body">
-                    <h5 class="card-title">Plataforma más usada</h5>
-                    <p class="card-text h4">
-                        {% if stats.most_used_platform %}
-                            {{ stats.most_used_platform.platform }}
-                        {% else %}
-                            N/A
-                        {% endif %}
-                    </p>
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <!-- Recomendaciones por Ruta -->
-    <div class="mb-5">
-        <h3 class="mb-3">Basado en tus rutas de aprendizaje</h3>
-        {% for route_name, courses in recommendations.by_route.items %}
-            <div class="mb-4">
-                <h4 class="text-muted mb-3">{{ route_name }}</h4>
-                <div class="row">
-                    {% for course in courses %}
-                        <div class="col-md-4">
-                            <div class="card h-100">
-                                <div class="thumbnail-container">
-                                    {% if course.thumbnail %}
-                                        <img src="{{ course.thumbnail.url }}" class="card-img-top" alt="{{ course.title }}">
-                                    {% else %}
-                                        <img src="{% static 'icons/course_icon.png' %}" class="card-img-top" alt="Default thumbnail">
-                                    {% endif %}
+                    <div class="videos-container" id="videos-container-{{ forloop.counter }}">
+                        <div class="videos-wrapper">
+                            {% for video in course_data.videos %}
+                                <div class="video-card">
+                                    <div class="card h-100">
+                                        <img src="{{ video.thumbnail }}" class="card-img-top" alt="{{ video.title }}">
+                                        <div class="card-body">
+                                            <h5 class="card-title text-truncate" title="{{ video.title }}">{{ video.title }}</h5>
+                                            <p class="card-text small text-truncate">{{ video.channel_title }}</p>
+                                            <div class="d-flex justify-content-between align-items-center">
+                                                <div class="small text-muted">
+                                                    <i class="fas fa-eye"></i> {{ video.view_count }}
+                                                    <i class="fas fa-thumbs-up ms-2"></i> {{ video.like_count }}
+                                                </div>
+                                            </div>
+                                        </div>
+                                        <div class="card-footer">
+                                            <a href="{{ video.url }}" target="_blank" class="btn btn-primary btn-sm w-100">
+                                                <i class="fab fa-youtube"></i> Ver en YouTube
+                                            </a>
+                                        </div>
+                                    </div>
                                 </div>
-                                <div class="card-body">
-                                    <h5 class="card-title">{{ course.title }}</h5>
-                                    <p class="card-text">
-                                        <span class="badge bg-primary">{{ course.get_platform_display }}</span>
-                                        <span class="badge bg-secondary">{{ course.get_language_display }}</span>
-                                    </p>
-                                    <a href="{{ course.url }}" target="_blank" class="btn btn-primary">Ver Curso</a>
-                                </div>
-                            </div>
-                        </div>
-                    {% endfor %}
-                </div>
-            </div>
-        {% empty %}
-            <div class="alert alert-info">
-                Aún no tenemos suficientes datos para hacer recomendaciones basadas en rutas.
-            </div>
-        {% endfor %}
-    </div>
-
-    <!-- Recomendaciones por Lenguaje -->
-    <div class="mb-5">
-        <h3 class="mb-3">Basado en tus lenguajes favoritos</h3>
-        {% for language, courses in recommendations.by_language.items %}
-            <div class="mb-4">
-                <h4 class="text-muted mb-3">{{ language }}</h4>
-                <div class="row">
-                    {% for course in courses %}
-                        <div class="col-md-4">
-                            <div class="card h-100">
-                                <div class="thumbnail-container">
-                                    {% if course.thumbnail %}
-                                        <img src="{{ course.thumbnail.url }}" class="card-img-top" alt="{{ course.title }}">
-                                    {% else %}
-                                        <img src="{% static 'icons/course_icon.png' %}" class="card-img-top" alt="Default thumbnail">
-                                    {% endif %}
-                                </div>
-                                <div class="card-body">
-                                    <h5 class="card-title">{{ course.title }}</h5>
-                                    <p class="card-text">
-                                        <span class="badge bg-primary">{{ course.get_platform_display }}</span>
-                                        <span class="badge bg-info">{{ course.route.name }}</span>
-                                    </p>
-                                    <a href="{{ course.url }}" target="_blank" class="btn btn-primary">Ver Curso</a>
-                                </div>
-                            </div>
-                        </div>
-                    {% endfor %}
-                </div>
-            </div>
-        {% empty %}
-            <div class="alert alert-info">
-                Aún no tenemos suficientes datos para hacer recomendaciones basadas en lenguajes.
-            </div>
-        {% endfor %}
-    </div>
-
-    <!-- Cursos Similares -->
-    {% if recommendations.similar_courses %}
-        <div class="mb-5">
-            <h3 class="mb-3">Cursos que podrían interesarte</h3>
-            <div class="row">
-                {% for course in recommendations.similar_courses %}
-                    <div class="col-md-4 mb-4">
-                        <div class="card h-100">
-                            <div class="thumbnail-container">
-                                {% if course.thumbnail %}
-                                    <img src="{{ course.thumbnail.url }}" class="card-img-top" alt="{{ course.title }}">
-                                {% else %}
-                                    <img src="{% static 'icons/course_icon.png' %}" class="card-img-top" alt="Default thumbnail">
-                                {% endif %}
-                            </div>
-                            <div class="card-body">
-                                <h5 class="card-title">{{ course.title }}</h5>
-                                <p class="card-text">
-                                    <span class="badge bg-primary">{{ course.get_platform_display }}</span>
-                                    <span class="badge bg-secondary">{{ course.get_language_display }}</span>
-                                    <span class="badge bg-info">{{ course.route.name }}</span>
-                                </p>
-                                <a href="{{ course.url }}" target="_blank" class="btn btn-primary">Ver Curso</a>
-                            </div>
+                            {% endfor %}
                         </div>
                     </div>
-                {% endfor %}
+                </div>
             </div>
+        {% endfor %}
+    {% else %}
+        <div class="alert alert-info">
+            <i class="fas fa-info-circle"></i> No hay recomendaciones disponibles en este momento. 
+            Agrega más cursos a tu biblioteca para obtener recomendaciones personalizadas.
         </div>
     {% endif %}
 </div>
 
 <style>
-    .thumbnail-container {
-        height: 200px;
-        overflow: hidden;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-    }
-    
-    .thumbnail-container img {
-        width: 100%;
-        height: 100%;
-        object-fit: cover;
-    }
-    
-    .card {
-        transition: transform 0.2s;
-    }
-    
-    .card:hover {
-        transform: translateY(-5px);
-        box-shadow: 0 4px 15px rgba(0,0,0,0.1);
-    }
+.videos-container {
+    position: relative;
+    overflow: hidden;
+    margin: 0 -15px;
+    padding: 0 15px;
+}
+
+.videos-wrapper {
+    display: flex;
+    gap: 1rem;
+    overflow-x: auto;
+    scroll-behavior: smooth;
+    scrollbar-width: none;
+    -ms-overflow-style: none;
+    padding: 1rem 0;
+}
+
+.videos-wrapper::-webkit-scrollbar {
+    display: none;
+}
+
+.video-card {
+    flex: 0 0 300px;
+    max-width: 300px;
+}
+
+.card-title {
+    font-size: 1rem;
+    line-height: 1.4;
+    max-height: 2.8em;
+    overflow: hidden;
+}
+
+.navigation-buttons {
+    gap: 0.5rem;
+    display: flex;
+}
+
+.navigation-buttons button {
+    padding: 0.25rem 0.5rem;
+}
+
+.card-img-top {
+    height: 169px;
+    object-fit: cover;
+}
 </style>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Función para manejar el scroll
+    function handleScroll(containerId, direction) {
+        const container = document.querySelector(`#videos-container-${containerId} .videos-wrapper`);
+        const scrollAmount = 300; // Ancho de una tarjeta
+        
+        if (direction === 'left') {
+            container.scrollLeft -= scrollAmount;
+        } else {
+            container.scrollLeft += scrollAmount;
+        }
+    }
+    
+    // Event listeners para los botones de navegación
+    document.querySelectorAll('.scroll-left').forEach(button => {
+        button.addEventListener('click', () => {
+            handleScroll(button.dataset.target, 'left');
+        });
+    });
+    
+    document.querySelectorAll('.scroll-right').forEach(button => {
+        button.addEventListener('click', () => {
+            handleScroll(button.dataset.target, 'right');
+        });
+    });
+});
+</script>
 {% endblock %}

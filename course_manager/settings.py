@@ -82,8 +82,12 @@ USE_TZ = True
 
 STATIC_URL = 'static/'
 STATICFILES_DIRS = [os.path.join(BASE_DIR, 'static')]
+STATIC_ROOT = os.path.join(BASE_DIR, 'staticfiles')
 
 MEDIA_URL = '/media/'
 MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
+
+# YouTube API settings
+YOUTUBE_API_KEY = 'AIzaSyA1HnIuXjsyS3i2TaE4mIeJLHu1goA3Y8A'  # Reemplaza esto con tu clave de API de YouTube
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'

@@ -1,136 +1,160 @@
 {% extends 'courses/base.html' %}
 
 {% block content %}
-<div class="row justify-content-center">
-    <div class="col-md-8">
-        <div class="card">
-            <div class="card-header">
-                <h4 class="mb-0">Agregar Nuevo Curso</h4>
-            </div>
-            <div class="card-body">
-                <form method="post">
-                    {% csrf_token %}
-                    
-                    <div class="mb-3">
-                        <label for="{{ form.title.id_for_label }}" class="form-label">Título del Curso</label>
-                        {{ form.title }}
-                        {% if form.title.errors %}
-                            <div class="alert alert-danger">
-                                {{ form.title.errors }}
-                            </div>
-                        {% endif %}
-                    </div>
-
-                    <div class="mb-3">
-                        <label for="{{ form.url.id_for_label }}" class="form-label">URL del Curso</label>
-                        {{ form.url }}
-                        {% if form.url.errors %}
-                            <div class="alert alert-danger">
-                                {{ form.url.errors }}
-                            </div>
-                        {% endif %}
-                    </div>
-
-                    <div class="row">
-                        <div class="col-md-4">
-                            <div class="mb-3">
-                                <label for="{{ form.platform.id_for_label }}" class="form-label">Plataforma</label>
-                                {{ form.platform }}
-                                {% if form.platform.errors %}
-                                    <div class="alert alert-danger">
-                                        {{ form.platform.errors }}
-                                    </div>
-                                {% endif %}
-                            </div>
-                        </div>
+<div class="container">
+    <div class="row justify-content-center">
+        <div class="col-md-8">
+            <div class="card">
+                <div class="card-header">
+                    <h2 class="text-center mb-0">Agregar Nuevo Curso</h2>
+                </div>
+                <div class="card-body">
+                    <form method="post" class="needs-validation" novalidate>
+                        {% csrf_token %}
                         
-                        <div class="col-md-4">
-                            <div class="mb-3">
-                                <label for="{{ form.language.id_for_label }}" class="form-label">Lenguaje</label>
+                        <div class="mb-3">
+                            <label for="{{ form.title.id_for_label }}" class="form-label">Título del Curso</label>
+                            {{ form.title }}
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="{{ form.description.id_for_label }}" class="form-label">Descripción</label>
+                            {{ form.description }}
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="{{ form.url.id_for_label }}" class="form-label">URL del Curso</label>
+                            {{ form.url }}
+                        </div>
+
+                        <div class="language-selection mb-3">
+                            <label class="form-label">Lenguaje de Programación</label>
+                            <div class="input-group">
                                 {{ form.language }}
-                                {% if form.language.errors %}
-                                    <div class="alert alert-danger">
-                                        {{ form.language.errors }}
-                                    </div>
-                                {% endif %}
+                                {{ form.new_language }}
                             </div>
+                            <small class="text-muted">Selecciona un lenguaje existente o crea uno nuevo</small>
                         </div>
 
-                        <div class="col-md-4">
-                            <div class="mb-3">
-                                <label for="{{ form.route.id_for_label }}" class="form-label">Ruta</label>
-                                <div class="input-group">
-                                    {{ form.route }}
-                                    <button type="button" class="btn btn-outline-primary" data-bs-toggle="modal" data-bs-target="#addRouteModal">
-                                        <i class="fas fa-plus"></i>
-                                    </button>
-                                </div>
-                                {% if form.route.errors %}
-                                    <div class="alert alert-danger">
-                                        {{ form.route.errors }}
-                                    </div>
-                                {% endif %}
+                        <div class="learning-path-selection mb-3">
+                            <label class="form-label">Ruta de Aprendizaje</label>
+                            <div class="input-group">
+                                {{ form.learning_path }}
+                                {{ form.new_learning_path }}
                             </div>
+                            <small class="text-muted">Selecciona una ruta existente o crea una nueva</small>
                         </div>
-                    </div>
 
-                    <div class="text-end">
-                        <a href="{% url 'home' %}" class="btn btn-secondary">Cancelar</a>
-                        <button type="submit" class="btn btn-primary">
-                            <i class="fas fa-save"></i> Guardar Curso
-                        </button>
-                    </div>
-                </form>
+                        <div class="platform-selection mb-3">
+                            <label class="form-label">Plataforma</label>
+                            <div class="input-group">
+                                {{ form.platform }}
+                                {{ form.new_platform }}
+                            </div>
+                            <small class="text-muted">Selecciona una plataforma existente o crea una nueva</small>
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="{{ form.difficulty.id_for_label }}" class="form-label">Dificultad</label>
+                            {{ form.difficulty }}
+                        </div>
+
+                        {% if form.errors %}
+                            <div class="alert alert-danger">
+                                {% for field in form %}
+                                    {% for error in field.errors %}
+                                        <p>{{ error }}</p>
+                                    {% endfor %}
+                                {% endfor %}
+                                {% for error in form.non_field_errors %}
+                                    <p>{{ error }}</p>
+                                {% endfor %}
+                            </div>
+                        {% endif %}
+
+                        <div class="text-center">
+                            <button type="submit" class="btn btn-primary">Guardar Curso</button>
+                            <a href="{% url 'home' %}" class="btn btn-secondary">Cancelar</a>
+                        </div>
+                    </form>
+                </div>
             </div>
         </div>
     </div>
 </div>
 
-<!-- Modal para agregar ruta -->
-<div class="modal fade" id="addRouteModal" tabindex="-1">
-    <div class="modal-dialog">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h5 class="modal-title">Agregar Nueva Ruta</h5>
-                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
-            </div>
-            <div class="modal-body">
-                <form id="addRouteForm">
-                    {% csrf_token %}
-                    <div class="mb-3">
-                        <label for="route-name" class="form-label">Nombre de la Ruta</label>
-                        <input type="text" class="form-control" id="route-name" name="name" required>
-                    </div>
-                    <button type="submit" class="btn btn-primary">Guardar</button>
-                </form>
-            </div>
-        </div>
-    </div>
-</div>
-{% endblock %}
+<style>
+.language-selection,
+.learning-path-selection,
+.platform-selection {
+    border: 1px solid var(--border-color);
+    padding: 15px;
+    border-radius: 5px;
+    background-color: var(--bg-secondary);
+}
 
-{% block extra_js %}
-<script>
-    $('#addRouteForm').on('submit', function(e) {
-        e.preventDefault();
-        
-        $.post('{% url "add_route" %}', {
-            name: $('#route-name').val(),
-            csrfmiddlewaretoken: $('[name=csrfmiddlewaretoken]').val()
-        }, function(response) {
-            if (response.status === 'success') {
-                $('#{{ form.route.id_for_label }}').append(
-                    $('<option>', {
-                        value: response.route_id,
-                        text: response.route_name
-                    })
-                );
-                $('#addRouteModal').modal('hide');
-                $('#addRouteForm')[0].reset();
-            } else {
-                alert('Error al crear la ruta');
-            }
-        });
-    });
-</script>
+.input-group {
+    margin-top: 10px;
+}
+
+.form-control {
+    background-color: var(--input-bg);
+    color: var(--text-color);
+    border-color: var(--border-color);
+}
+
+.form-control:focus {
+    background-color: var(--input-bg-focus);
+    color: var(--text-color);
+    border-color: var(--primary-color);
+    box-shadow: 0 0 0 0.2rem rgba(var(--primary-rgb), 0.25);
+}
+
+select.form-control {
+    background-color: var(--input-bg);
+    color: var(--text-color);
+    border-color: var(--border-color);
+    cursor: pointer;
+}
+
+select.form-control option {
+    background-color: var(--bg-primary);
+    color: var(--text-color);
+    padding: 8px;
+}
+
+select.form-control:focus {
+    background-color: var(--input-bg-focus);
+    color: var(--text-color);
+    border-color: var(--primary-color);
+}
+
+select.form-control option:hover,
+select.form-control option:focus,
+select.form-control option:active,
+select.form-control option:checked {
+    background-color: var(--primary-color);
+    color: white;
+}
+
+.btn-primary {
+    background-color: var(--primary-color);
+    border-color: var(--primary-color);
+}
+
+.btn-primary:hover {
+    background-color: var(--primary-color-hover);
+    border-color: var(--primary-color-hover);
+}
+
+.btn-secondary {
+    background-color: var(--secondary-color);
+    border-color: var(--secondary-color);
+}
+
+.btn-secondary:hover {
+    background-color: var(--secondary-color-hover);
+    border-color: var(--secondary-color-hover);
+}
+</style>
 {% endblock %}

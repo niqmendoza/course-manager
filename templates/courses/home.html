@@ -2,100 +2,111 @@
 
 {% block content %}
 <div class="row mb-4">
-    <div class="col-md-3">
-        <select id="route-filter" class="form-select">
-            <option value="">Todas las rutas</option>
-            {% for route in routes %}
-                <option value="{{ route.id }}">{{ route.name }}</option>
-            {% endfor %}
-        </select>
+    <div class="col-md-8">
+        <h1 class="display-4 mb-3">
+            <i class="fas fa-laptop-code me-3"></i>Mis Cursos
+        </h1>
     </div>
-    <div class="col-md-3">
-        <select id="language-filter" class="form-select">
-            <option value="">Todos los lenguajes</option>
-            {% for code, name in courses.0.LANGUAGE_CHOICES %}
-                <option value="{{ code }}">{{ name }}</option>
-            {% endfor %}
-        </select>
-    </div>
-    <div class="col-md-3">
-        <select id="platform-filter" class="form-select">
-            <option value="">Todas las plataformas</option>
-            {% for code, name in courses.0.PLATFORM_CHOICES %}
-                <option value="{{ code }}">{{ name }}</option>
-            {% endfor %}
-        </select>
-    </div>
-    <div class="col-md-3">
-        <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#addRouteModal">
-            <i class="fas fa-plus"></i> Nueva Ruta
-        </button>
+    <div class="col-md-4 text-end">
+        <a href="{% url 'add_course' %}" class="btn btn-primary">
+            <i class="fas fa-plus-circle me-2"></i>Nuevo Curso
+        </a>
     </div>
 </div>
 
-<div id="courses-container">
-    {% include 'courses/course_list_partial.html' %}
-</div>
-
-<!-- Modal para agregar ruta -->
-<div class="modal fade" id="addRouteModal" tabindex="-1">
-    <div class="modal-dialog">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h5 class="modal-title">Agregar Nueva Ruta</h5>
-                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+<div class="row">
+    {% for course in courses %}
+    <div class="col-md-4 mb-4">
+        <div class="card course-card h-100">
+            <div class="card-header d-flex align-items-center">
+                <div class="icon-container">
+                    <i class="fas fa-{{ course.platform|lower }}-square"></i>
+                </div>
+                <h5 class="card-title mb-0">{{ course.platform }}</h5>
             </div>
-            <div class="modal-body">
-                <form id="addRouteForm">
-                    {% csrf_token %}
-                    <div class="mb-3">
-                        <label for="route-name" class="form-label">Nombre de la Ruta</label>
-                        <input type="text" class="form-control" id="route-name" name="name" required>
+            {% if course.thumbnail %}
+            <img src="{{ course.thumbnail.url }}" class="card-img-top" alt="{{ course.title }}">
+            {% endif %}
+            <div class="card-body">
+                <h5 class="card-title">{{ course.title }}</h5>
+                <p class="card-text text-secondary">
+                    <i class="fas fa-code me-2"></i>{{ course.language }}
+                </p>
+                <p class="card-text">
+                    <i class="fas fa-route me-2"></i>{{ course.route }}
+                </p>
+                {% if course.completed %}
+                <span class="completed-badge">
+                    <i class="fas fa-check-circle me-1"></i>Completado
+                </span>
+                {% endif %}
+            </div>
+            <div class="card-footer bg-transparent border-top-0">
+                <div class="d-flex justify-content-between align-items-center">
+                    <a href="{{ course.url }}" target="_blank" class="btn btn-primary btn-sm">
+                        <i class="fas fa-external-link-alt me-1"></i>Ver Curso
+                    </a>
+                    <div class="btn-group">
+                        <button class="btn btn-outline-primary btn-sm toggle-complete" data-course-id="{{ course.id }}"
+                            data-bs-toggle="tooltip" title="Marcar como {% if course.completed %}incompleto{% else %}completado{% endif %}">
+                            <i class="fas fa-check"></i>
+                        </button>
+                        <button class="btn btn-outline-danger btn-sm delete-course" data-course-id="{{ course.id }}"
+                            data-bs-toggle="tooltip" title="Eliminar curso">
+                            <i class="fas fa-trash"></i>
+                        </button>
                     </div>
-                    <button type="submit" class="btn btn-primary">Guardar</button>
-                </form>
+                </div>
             </div>
         </div>
     </div>
+    {% empty %}
+    <div class="col-12 text-center">
+        <div class="card course-card">
+            <div class="card-body">
+                <i class="fas fa-book-open fa-4x mb-3 text-secondary"></i>
+                <h3>No hay cursos todavía</h3>
+                <p class="text-secondary">¡Comienza añadiendo tu primer curso!</p>
+                <a href="{% url 'add_course' %}" class="btn btn-primary">
+                    <i class="fas fa-plus-circle me-2"></i>Añadir Curso
+                </a>
+            </div>
+        </div>
+    </div>
+    {% endfor %}
 </div>
-{% endblock %}
 
-{% block extra_js %}
 <script>
-    function filterCourses() {
-        const route = $('#route-filter').val();
-        const language = $('#language-filter').val();
-        const platform = $('#platform-filter').val();
-        
-        $.get('{% url "filter_courses" %}', {
-            route: route,
-            language: language,
-            platform: platform
-        }, function(data) {
-            $('#courses-container').html(data);
+    $(document).ready(function() {
+        // Toggle curso completado
+        $('.toggle-complete').click(function() {
+            var courseId = $(this).data('course-id');
+            var button = $(this);
+            $.post('/toggle-complete/' + courseId + '/', function(data) {
+                if (data.completed) {
+                    button.closest('.card').find('.completed-badge').remove();
+                    button.closest('.card-body').append(
+                        '<span class="completed-badge"><i class="fas fa-check-circle me-1"></i>Completado</span>'
+                    );
+                } else {
+                    button.closest('.card').find('.completed-badge').remove();
+                }
+            });
         });
-    }
 
-    $('#route-filter, #language-filter, #platform-filter').change(filterCourses);
-
-    $('#addRouteForm').on('submit', function(e) {
-        e.preventDefault();
-        
-        $.post('{% url "add_route" %}', {
-            name: $('#route-name').val(),
-            csrfmiddlewaretoken: $('[name=csrfmiddlewaretoken]').val()
-        }, function(response) {
-            if (response.status === 'success') {
-                $('#route-filter').append(
-                    $('<option>', {
-                        value: response.route_id,
-                        text: response.route_name
-                    })
-                );
-                $('#addRouteModal').modal('hide');
-                $('#addRouteForm')[0].reset();
-            } else {
-                alert('Error al crear la ruta');
+        // Eliminar curso
+        $('.delete-course').click(function() {
+            if (confirm('¿Estás seguro de que quieres eliminar este curso?')) {
+                var courseId = $(this).data('course-id');
+                var card = $(this).closest('.col-md-4');
+                $.post('/delete-course/' + courseId + '/', function() {
+                    card.fadeOut(300, function() {
+                        $(this).remove();
+                        if ($('.course-card').length === 0) {
+                            location.reload();
+                        }
+                    });
+                });
             }
         });
     });

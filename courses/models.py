@@ -1,18 +1,32 @@
 from django.db import models
+from django.utils import timezone
 import requests
 from urllib.parse import urlparse
 from PIL import Image
 from io import BytesIO
 import os
 
-class Route(models.Model):
+class ProgrammingLanguage(models.Model):
+    name = models.CharField(max_length=50, unique=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    def __str__(self):
+        return self.name
+
+    class Meta:
+        ordering = ['name']
+
+class LearningPath(models.Model):
     name = models.CharField(max_length=100, unique=True)
     created_at = models.DateTimeField(auto_now_add=True)
 
     def __str__(self):
         return self.name
 
-class Course(models.Model):
+    class Meta:
+        ordering = ['name']
+
+class Platform(models.Model):
     PLATFORM_CHOICES = [
         ('youtube', 'YouTube'),
         ('udemy', 'Udemy'),
@@ -20,79 +34,83 @@ class Course(models.Model):
         ('otros', 'Otros'),
     ]
 
-    LANGUAGE_CHOICES = [
-        ('python', 'Python'),
-        ('javascript', 'JavaScript'),
-        ('java', 'Java'),
-        ('cpp', 'C++'),
-        ('csharp', 'C#'),
-        ('php', 'PHP'),
-        ('ruby', 'Ruby'),
-        ('swift', 'Swift'),
-        ('otros', 'Otros'),
+    name = models.CharField(max_length=100, unique=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    def __str__(self):
+        return self.name
+
+class Course(models.Model):
+    DIFFICULTY_CHOICES = [
+        ('principiante', 'Principiante'),
+        ('intermedio', 'Intermedio'),
+        ('avanzado', 'Avanzado'),
     ]
 
     title = models.CharField(max_length=200)
+    description = models.TextField(blank=True)  
     url = models.URLField()
-    platform = models.CharField(max_length=20, choices=PLATFORM_CHOICES)
-    language = models.CharField(max_length=20, choices=LANGUAGE_CHOICES)
-    route = models.ForeignKey(Route, on_delete=models.CASCADE, related_name='courses')
+    platform = models.ForeignKey(Platform, on_delete=models.CASCADE, related_name='courses')
+    language = models.ForeignKey(ProgrammingLanguage, on_delete=models.SET_NULL, null=True, related_name='courses')
+    learning_path = models.ForeignKey(LearningPath, on_delete=models.CASCADE, related_name='courses')
     thumbnail = models.ImageField(upload_to='thumbnails/', null=True, blank=True)
-    created_at = models.DateTimeField(auto_now_add=True)
+    difficulty = models.CharField(max_length=20, choices=DIFFICULTY_CHOICES, default='principiante')
     completed = models.BooleanField(default=False)
     completed_at = models.DateTimeField(null=True, blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    def toggle_completion(self):
+        self.completed = not self.completed
+        self.completed_at = timezone.now() if self.completed else None
+        self.save()
 
     def save(self, *args, **kwargs):
         if not self.thumbnail:
             self.generate_thumbnail()
         super().save(*args, **kwargs)
 
+    def get_youtube_video_id(self):
+        parsed_url = urlparse(self.url)
+        if 'youtube.com' in parsed_url.netloc:
+            if 'v=' in parsed_url.query:
+                return parsed_url.query.split('v=')[1].split('&')[0]
+        elif 'youtu.be' in parsed_url.netloc:
+            return parsed_url.path[1:]
+        return None
+
     def generate_thumbnail(self):
-        if 'youtube.com' in self.url or 'youtu.be' in self.url:
-            video_id = self.get_youtube_video_id()
-            if video_id:
+        video_id = self.get_youtube_video_id()
+        if video_id:
+            try:
                 thumbnail_url = f'https://img.youtube.com/vi/{video_id}/maxresdefault.jpg'
-                self.save_thumbnail_from_url(thumbnail_url)
+                response = requests.get(thumbnail_url)
+                if response.status_code == 200:
+                    img = Image.open(BytesIO(response.content))
+                    output = BytesIO()
+                    img.save(output, format='JPEG')
+                    output.seek(0)
+                    self.thumbnail.save(f'{video_id}.jpg', output)
+            except Exception as e:
+                print(f"Error al generar la miniatura: {e}")
         else:
-            # Para otras plataformas, usar un ícono predeterminado según la plataforma
             platform_icons = {
                 'udemy': 'udemy_icon.png',
                 'platzi': 'platzi_icon.png',
                 'otros': 'course_icon.png'
             }
-            icon_path = f'static/icons/{platform_icons.get(self.platform, "course_icon.png")}'
+            icon_path = f'static/icons/{platform_icons.get(self.platform.name.lower(), "course_icon.png")}'
             if os.path.exists(icon_path):
                 self.thumbnail.save(
-                    f'{self.platform}_icon.png',
+                    f'{self.platform.name.lower()}_icon.png',
                     open(icon_path, 'rb')
                 )
 
-    def get_youtube_video_id(self):
-        parsed_url = urlparse(self.url)
-        if 'youtube.com' in self.url:
-            query = parsed_url.query
-            return query.split('v=')[1].split('&')[0] if 'v=' in query else None
-        elif 'youtu.be' in self.url:
-            return parsed_url.path[1:]
-        return None
-
-    def save_thumbnail_from_url(self, url):
-        try:
-            response = requests.get(url)
-            if response.status_code == 200:
-                img = Image.open(BytesIO(response.content))
-                img_io = BytesIO()
-                img.save(img_io, format='PNG')
-                self.thumbnail.save(
-                    f'thumbnail_{self.id}.png',
-                    BytesIO(img_io.getvalue()),
-                    save=False
-                )
-        except Exception as e:
-            print(f"Error al generar la miniatura: {e}")
-
     def __str__(self):
         return self.title
+
+    class Meta:
+        ordering = ['-created_at']
 
 class Documentation(models.Model):
     CATEGORY_CHOICES = [
